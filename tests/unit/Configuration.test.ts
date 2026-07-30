@@ -20,8 +20,11 @@ const TOUCHED_ENV_KEYS = [
 ];
 
 const savedEnv: Record<string, string | undefined> = {};
+const console_def = console;
 
 beforeEach(() => {
+  console.error = () => {};
+  console.warn = () => {};
   for (const key of TOUCHED_ENV_KEYS) {
     savedEnv[key] = import.meta.env[key];
     delete import.meta.env[key];
@@ -36,6 +39,8 @@ afterEach(() => {
       import.meta.env[key] = savedEnv[key];
     }
   }
+  console.error = console_def.error;
+  console.warn = console_def.warn;
 });
 
 function apiRow(name: string, value: string): ConfigObject {
