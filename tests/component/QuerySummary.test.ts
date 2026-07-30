@@ -12,8 +12,9 @@ import type { FilterInterface, FilterGroupInterface } from '$lib/models/Filter.s
 
 vi.mock('$app/navigation', () => ({ goto: vi.fn() }));
 vi.mock('$lib/toaster', () => ({ toaster: { success: vi.fn(), error: vi.fn() } }));
+const mockConfig = vi.hoisted(() => ({ features: { restoreV2queries: false } }));
 vi.mock('$lib/configuration.svelte', () => ({
-  config: { features: { restoreV2queries: false } },
+  config: mockConfig,
 }));
 
 vi.mock('$lib/stores/Filter', async () => {
@@ -72,6 +73,7 @@ const baseProps = { query: {} as QueryV3, version: QueryVersion.V3 };
 describe('QuerySummary', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockConfig.features.restoreV2queries = false;
   });
 
   it('shows the enabled Restore Filters button when there are no errors', async () => {
@@ -99,5 +101,29 @@ describe('QuerySummary', () => {
     expect(screen.getByTestId('restore-popover-btn')).toBeDisabled();
     expect(screen.getByTestId('error-alert')).toBeInTheDocument();
     expect(screen.getByTestId('error-alert')).toHaveTextContent('\\phs001\\');
+  });
+
+  it('hides the Restore Filters button for V2 queries when restoreV2queries is false', async () => {
+    mockConfig.features.restoreV2queries = false;
+    mockLoadQuerySummaryData.mockReturnValue(baseData);
+    render(QuerySummary, { query: {} as QueryV3, version: QueryVersion.V2 });
+
+    await screen.findByTestId('dataset-filters-container');
+
+    expect(screen.queryByTestId('restore-filters-btn')).not.toBeInTheDocument();
+    const popover = screen.getByTestId('restore-popover-btn');
+    expect(popover).toBeDisabled();
+    expect(popover).toHaveTextContent('Restore Filters');
+  });
+
+  it('shows the enabled Restore Filters button for V2 queries when restoreV2queries is true', async () => {
+    mockConfig.features.restoreV2queries = true;
+    mockLoadQuerySummaryData.mockReturnValue(baseData);
+    render(QuerySummary, { query: {} as QueryV3, version: QueryVersion.V2 });
+
+    await screen.findByTestId('dataset-filters-container');
+
+    expect(screen.getByTestId('restore-filters-btn')).toBeEnabled();
+    expect(screen.queryByTestId('restore-popover-btn')).not.toBeInTheDocument();
   });
 });
